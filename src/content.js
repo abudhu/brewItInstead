@@ -229,35 +229,42 @@
     document.addEventListener("keydown", escListener, true);
   }
 
-  async function handleDownloadIntent(url, evt) {
+  async function handleDownloadIntent(url, target) {
     const snoozed = getSnoozed();
+    let resp;
     try {
-      const resp = await chrome.runtime.sendMessage({
+      resp = await chrome.runtime.sendMessage({
         type: "match",
         url,
         filename: basenameFromUrl(url),
       });
-      if (!resp || !resp.ok || !Array.isArray(resp.hits) || !resp.hits.length) {
-        return false;
-      }
-      const top = resp.hits[0];
-      if (snoozed.has(top.cask.token)) return false;
-
-      if (evt) {
-        evt.preventDefault();
-        evt.stopPropagation();
-      }
-
-      showModal({
-        hits: resp.hits,
-        onProceed: () => {
-          window.location.href = url;
-        },
-      });
-      return true;
     } catch (err) {
       console.warn("[brewItInstead] match request failed:", err);
-      return false;
+    }
+
+    const hits = resp && resp.ok && Array.isArray(resp.hits) ? resp.hits : [];
+    const top = hits[0];
+
+    // No match, or the user has already snoozed this cask this session.
+    // Re-trigger the download we suppressed.
+    if (!top || snoozed.has(top.cask.token)) {
+      triggerDownload(url, target);
+      return;
+    }
+
+    showModal({
+      hits,
+      onProceed: () => {
+        triggerDownload(url, target);
+      },
+    });
+  }
+
+  function triggerDownload(url, target) {
+    if (target === "_blank") {
+      window.open(url, "_blank", "noopener");
+    } else {
+      window.location.href = url;
     }
   }
 
@@ -269,6 +276,13 @@
     if (!a) return;
     const href = a.href;
     if (!looksLikeDownload(href)) return;
-    handleDownloadIntent(href, e);
+
+    // Suppress the browser's download/navigation synchronously so it doesn't
+    // race the async match request. We re-trigger it ourselves in
+    // handleDownloadIntent if there's no cask match or the user proceeds.
+    e.preventDefault();
+    e.stopPropagation();
+
+    handleDownloadIntent(href, a.target);
   }, true);
 })();
