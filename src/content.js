@@ -10,13 +10,56 @@
     ".dmg", ".pkg", ".zip", ".tar.gz", ".tar.xz", ".tgz", ".tbz",
   ];
   const SESSION_KEY = "brewItInstead.snoozed";
+  const PERSISTENT_SNOOZE_KEY = "snoozed_v1";
+  const SNOOZE_24H_MS = 24 * 60 * 60 * 1000;
+
+  const DEFAULT_SETTINGS = {
+    disabledHosts: [],
+    extraExtensions: [],
+    showDownloadNotifications: true,
+    showVersionDrift: true,
+    snoozeDuration: "session",
+  };
+
+  let settings = { ...DEFAULT_SETTINGS };
+  let pageHostDisabled = false;
+
+  function normalizeHost(h) {
+    return (h || "").trim().toLowerCase().replace(/^www\./, "");
+  }
+  function isHostDisabled(host) {
+    const h = normalizeHost(host);
+    if (!h) return false;
+    for (const raw of settings.disabledHosts || []) {
+      const pat = normalizeHost(raw);
+      if (!pat) continue;
+      if (h === pat || h.endsWith("." + pat)) return true;
+    }
+    return false;
+  }
+  function refreshPageDisabled() {
+    pageHostDisabled = isHostDisabled(location.hostname);
+  }
+
+  chrome.storage.local.get("settings_v1").then(({ settings_v1 }) => {
+    if (settings_v1) settings = { ...DEFAULT_SETTINGS, ...settings_v1 };
+    refreshPageDisabled();
+  });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    if (changes.settings_v1) {
+      settings = { ...DEFAULT_SETTINGS, ...(changes.settings_v1.newValue || {}) };
+      refreshPageDisabled();
+    }
+  });
 
   function looksLikeDownload(url) {
     if (!url) return false;
     let u;
     try { u = new URL(url, location.href); } catch { return false; }
     const path = u.pathname.toLowerCase();
-    return ARCHIVE_SUFFIXES.some((s) => path.endsWith(s));
+    const exts = [...ARCHIVE_SUFFIXES, ...(settings.extraExtensions || [])];
+    return exts.some((s) => path.endsWith(s));
   }
 
   function basenameFromUrl(url) {
@@ -29,7 +72,11 @@
     }
   }
 
-  function getSnoozed() {
+  // ---------- Snooze ----------
+  // "session" mode uses sessionStorage (per-tab). "24h" mode uses
+  // chrome.storage.local with timestamps so it persists across tabs.
+
+  function getSessionSnoozed() {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
       return raw ? new Set(JSON.parse(raw)) : new Set();
@@ -37,12 +84,81 @@
       return new Set();
     }
   }
-
-  function addSnoozed(token) {
-    const set = getSnoozed();
+  function addSessionSnoozed(token) {
+    const set = getSessionSnoozed();
     set.add(token);
     try { sessionStorage.setItem(SESSION_KEY, JSON.stringify([...set])); } catch {}
   }
+  async function isPersistSnoozed(token) {
+    try {
+      const got = await chrome.storage.local.get(PERSISTENT_SNOOZE_KEY);
+      const map = got[PERSISTENT_SNOOZE_KEY] || {};
+      const ts = map[token];
+      if (!ts) return false;
+      if (Date.now() - ts > SNOOZE_24H_MS) {
+        // Expired — clean up best-effort.
+        delete map[token];
+        await chrome.storage.local.set({ [PERSISTENT_SNOOZE_KEY]: map });
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  async function addPersistSnoozed(token) {
+    try {
+      const got = await chrome.storage.local.get(PERSISTENT_SNOOZE_KEY);
+      const map = got[PERSISTENT_SNOOZE_KEY] || {};
+      map[token] = Date.now();
+      await chrome.storage.local.set({ [PERSISTENT_SNOOZE_KEY]: map });
+    } catch {}
+  }
+
+  async function isSnoozed(token) {
+    if (getSessionSnoozed().has(token)) return true;
+    if (settings.snoozeDuration === "24h") return await isPersistSnoozed(token);
+    return false;
+  }
+  async function recordSnooze(token) {
+    addSessionSnoozed(token);
+    if (settings.snoozeDuration === "24h") await addPersistSnoozed(token);
+  }
+
+  // ---------- Version drift ----------
+  // We do the version extraction here in the content script so we don't have
+  // to round-trip the URL string back through the matcher response.
+
+  function extractVersionFromUrl(url) {
+    let parsed;
+    try { parsed = new URL(url, location.href); } catch { return ""; }
+    const candidates = [];
+    const segs = parsed.pathname.split("/").filter(Boolean);
+    for (const seg of segs) {
+      const re = /v?(\d+\.\d+(?:\.\d+){0,2})/gi;
+      let m;
+      while ((m = re.exec(seg)) !== null) candidates.push(m[1]);
+    }
+    candidates.sort((a, b) => b.length - a.length);
+    return candidates[0] || "";
+  }
+  function compareVersions(a, b) {
+    if (!a || !b) return null;
+    const parse = (s) => s.split(".").map((n) => parseInt(n, 10)).filter((n) => !Number.isNaN(n));
+    const pa = parse(a);
+    const pb = parse(b);
+    if (!pa.length || !pb.length) return null;
+    const len = Math.max(pa.length, pb.length);
+    for (let i = 0; i < len; i++) {
+      const x = pa[i] || 0;
+      const y = pb[i] || 0;
+      if (x < y) return -1;
+      if (x > y) return 1;
+    }
+    return 0;
+  }
+
+  // ---------- Modal ----------
 
   let modalHost = null;
 
@@ -75,7 +191,7 @@
     modalHost = null;
   }
 
-  function showModal({ hits, onProceed }) {
+  function showModal({ hits, originalUrl, onProceed }) {
     const host = ensureHost();
     const root = host._container;
     root.innerHTML = "";
@@ -125,6 +241,22 @@
       : "filename match";
     meta.appendChild(version);
     meta.appendChild(confidence);
+
+    // Version drift pill
+    if (settings.showVersionDrift && top.cask.version) {
+      const pageVer = extractVersionFromUrl(originalUrl);
+      const cmp = compareVersions(pageVer, top.cask.version);
+      if (cmp !== null && cmp !== 0) {
+        const drift = document.createElement("span");
+        const cls = cmp < 0 ? "bii-drift-ahead" : "bii-drift-behind";
+        drift.className = `bii-pill ${cls}`;
+        drift.textContent = cmp < 0
+          ? `brew is newer: v${top.cask.version} vs v${pageVer}`
+          : `brew is older: v${top.cask.version} vs v${pageVer}`;
+        meta.appendChild(drift);
+      }
+    }
+
     if (top.cask.homepage) {
       const link = document.createElement("a");
       link.className = "bii-link";
@@ -196,8 +328,8 @@
     const proceedBtn = document.createElement("button");
     proceedBtn.className = "bii-proceed";
     proceedBtn.textContent = "Download anyway";
-    proceedBtn.addEventListener("click", () => {
-      addSnoozed(top.cask.token);
+    proceedBtn.addEventListener("click", async () => {
+      await recordSnooze(top.cask.token);
       closeModal();
       if (typeof onProceed === "function") onProceed();
     });
@@ -229,8 +361,9 @@
     document.addEventListener("keydown", escListener, true);
   }
 
+  // ---------- Click handling ----------
+
   async function handleDownloadIntent(url, target) {
-    const snoozed = getSnoozed();
     let resp;
     try {
       resp = await chrome.runtime.sendMessage({
@@ -245,15 +378,14 @@
     const hits = resp && resp.ok && Array.isArray(resp.hits) ? resp.hits : [];
     const top = hits[0];
 
-    // No match, or the user has already snoozed this cask this session.
-    // Re-trigger the download we suppressed.
-    if (!top || snoozed.has(top.cask.token)) {
+    if (!top || await isSnoozed(top.cask.token)) {
       triggerDownload(url, target);
       return;
     }
 
     showModal({
       hits,
+      originalUrl: url,
       onProceed: () => {
         triggerDownload(url, target);
       },
@@ -269,6 +401,7 @@
   }
 
   document.addEventListener("click", (e) => {
+    if (pageHostDisabled) return;
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (e.defaultPrevented) return;
 

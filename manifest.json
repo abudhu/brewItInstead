@@ -36,6 +36,10 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
   "action": {
     "default_title": "Brew It Instead",
     "default_popup": "src/popup.html",

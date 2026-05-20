@@ -98,6 +98,9 @@
 .bii-conf-host     { background: #2563eb; color: #fff; }
 .bii-conf-filename { background: #6b7280; color: #fff; }
 
+.bii-drift-ahead   { background: #2563eb; color: #fff; }
+.bii-drift-behind  { background: #b91c1c; color: #fff; }
+
 .bii-link {
   color: #2563eb;
   text-decoration: none;

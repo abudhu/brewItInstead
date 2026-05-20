@@ -4,6 +4,7 @@
 
 import { refreshIndex, loadIndex, buildLookups, REFRESH_INTERVAL_MIN } from "./lib/caskIndex.js";
 import { matchDownload, looksLikeMacDownload } from "./lib/matcher.js";
+import { loadSettings } from "./lib/settings.js";
 
 const ALARM_NAME = "brewItInstead.refresh";
 
@@ -101,10 +102,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
 // Fallback path: downloads that bypassed the click interceptor (programmatic
 // navigation, form posts, etc.) still trigger a system notification with the
-// brew command, but we don't auto-cancel.
+// brew command, but we don't auto-cancel.  This can be turned off in the
+// extension settings.
 chrome.downloads.onCreated.addListener(async (item) => {
   try {
-    if (!looksLikeMacDownload(item.url, item.filename)) return;
+    const settings = await loadSettings();
+    if (!settings.showDownloadNotifications) return;
+    if (!looksLikeMacDownload(item.url, item.filename, settings.extraExtensions)) return;
     const lk = await ensureLookups();
     const hits = matchDownload({ url: item.url, filename: item.filename }, lk);
     if (!hits.length) return;

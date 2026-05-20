@@ -35,16 +35,41 @@ It's the browser companion to [`convertToHomeBrew`](https://github.com/abudhu/co
 
 ## Matching
 
-The matcher considers two signals and ranks results by how many agree:
+The matcher considers three signals and ranks results by how many agree:
 
 | Confidence | Meaning |
 |---|---|
-| `verified` | Both the download hostname **and** the filename point at the same cask. |
-| `likely` | Hostname matches a cask, and the filename matches some cask, but not the same one — the hostname winner is shown. |
-| `host` | Only the hostname matched a cask. |
+| `verified` | A strong host signal (the cask's download hostname **or** its GitHub `owner/repo`) **and** the filename point at the same cask. |
+| `likely` | A strong host signal matches, and the filename matches some cask, but not the same one — the host-side winner is shown. |
+| `host` | Only the host signal matched a cask (vendor hostname or GitHub `owner/repo`). |
 | `filename` | Only the filename matched a cask artifact (e.g. `Slack.dmg`). |
 
 Filenames are normalised by stripping common arch/version suffixes (`-aarch64`, `_v1.2.3`, `.dmg`, etc.) before lookup, so `Zed-aarch64.dmg` reduces to `zed`.
+
+### GitHub releases
+
+Lots of OSS apps download from URLs like `https://github.com/<owner>/<repo>/releases/download/v1.2.7/Foo.dmg`. The hostname `github.com` is too shared to be a useful signal on its own, so it's excluded from the host index. Instead, every cask that points at a GitHub URL has its `owner/repo` extracted into a separate `byGithubRepo` index. Matching incoming GitHub release URLs against that index gives the same precision as a vendor hostname match.
+
+### Version drift
+
+When the download URL contains a version-looking string (e.g. `…/releases/stable/1.2.7/Zed-aarch64.dmg`), the modal compares it to the cask's version and shows a pill:
+
+- **brew is newer: v1.2.7 vs v1.2.3** — the page is offering an older build.
+- **brew is older: v1.2.5 vs v1.2.7** — brew hasn't caught up yet.
+
+Can be toggled off in the settings page.
+
+## Settings
+
+Open the toolbar popup and click **Open settings**, or visit `about:addons` → Brew It Instead → Options.
+
+| Setting | Default | What it does |
+|---|---|---|
+| Show download-notification fallback | on | System notification when a download starts that we couldn't intercept (programmatic redirects, form posts). |
+| Show version drift | on | "Page: 1.2.3 · Brew: 1.2.5" pill in the modal. |
+| "Download anyway" remembers for | session | `session`: per-tab. `24h`: across all tabs. |
+| Disabled hostnames | empty | One per line. Subdomains match — `example.com` covers `downloads.example.com`. |
+| Extra download extensions | empty | E.g. `.tar.bz2`, `.7z`. Added to the built-in list of `.dmg/.pkg/.zip/.tar.gz/.tar.xz/.tgz/.tbz`. |
 
 ## Install (Firefox, development)
 
@@ -75,9 +100,12 @@ brewItInstead/
 │   ├── modal.css          Styles injected into the shadow root
 │   ├── popup.html         Toolbar popup
 │   ├── popup.js           Popup logic (status, manual refresh)
+│   ├── options.html       Settings page
+│   ├── options.js         Settings page logic
 │   └── lib/
-│       ├── caskIndex.js   Fetch + prune + persist cask.json
-│       └── matcher.js     URL/filename → cask matcher
+│       ├── caskIndex.js   Fetch + prune + persist cask.json (incl. GitHub repos)
+│       ├── matcher.js     URL/filename/github → cask matcher
+│       └── settings.js    Shared settings model
 ├── icons/                 48px and 128px PNGs
 ├── scripts/
 │   └── make_icons.py      Regenerate icons (requires Pillow)
@@ -107,10 +135,10 @@ Option 1 is the right starting point. Option 2 is the natural next step — it c
 
 ## Roadmap
 
-- [ ] `brew://` URL scheme + helper app to "click to install"
+- [x] Settings page: enable/disable per host, custom archive extensions, snooze duration, drift toggle
+- [x] Show version drift (page offers 1.2.3, cask has 1.2.5)
+- [x] GitHub release URL matching via `owner/repo` extraction
 - [ ] Detect "already installed via brew" and replace the modal copy
-- [ ] Settings page: enable/disable per host, custom archive extensions
-- [ ] Show version drift (page offers 1.2.3, cask has 1.2.5)
 - [ ] Chrome Web Store + AMO submissions
 - [ ] Per-cask preview screenshot pulled from `homepage`
 

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Brew It Instead — Settings</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      max-width: 640px;
+      margin: 32px auto;
+      padding: 0 20px 64px;
+      color: #111;
+      background: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1f2024; color: #f3f3f3; }
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 4px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c2410c;
+      margin-bottom: 4px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .eyebrow { color: #fb923c; }
+    }
+    .sub {
+      font-size: 13px;
+      opacity: 0.7;
+      margin-bottom: 28px;
+    }
+    section {
+      border-top: 1px solid rgba(127,127,127,0.25);
+      padding: 20px 0;
+    }
+    h2 {
+      font-size: 14px;
+      margin: 0 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.75;
+    }
+    label.row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    label.row input[type="checkbox"] {
+      margin-top: 2px;
+    }
+    .help {
+      display: block;
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    label.field {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      font: inherit;
+      font-size: 13px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(127,127,127,0.4);
+      background: rgba(127,127,127,0.05);
+      color: inherit;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    select { font-family: inherit; }
+    .actions {
+      position: sticky;
+      bottom: 0;
+      background: var(--bg, inherit);
+      padding: 16px 0 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button.primary {
+      background: #c2410c;
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.primary:hover { background: #9a3412; }
+    button.secondary {
+      background: transparent;
+      color: inherit;
+      border: 1px solid rgba(127,127,127,0.4);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.secondary:hover { background: rgba(127,127,127,0.1); }
+    .status {
+      margin-left: auto;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .status.show { opacity: 0.85; }
+    .status.ok { color: #16a34a; }
+    .status.err { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">Brew It Instead</div>
+  <h1>Settings</h1>
+  <p class="sub">All settings are stored locally in your browser.</p>
+
+  <section>
+    <h2>Behavior</h2>
+
+    <label class="row">
+      <input type="checkbox" id="showDownloadNotifications" />
+      <span>
+        Show a system notification when a download starts that we couldn't intercept
+        <span class="help">Some pages trigger downloads programmatically (form posts, JS redirects) before our click handler can run. When this happens, we'll fire a system notification with the brew install command.</span>
+      </span>
+    </label>
+
+    <label class="row">
+      <input type="checkbox" id="showVersionDrift" />
+      <span>
+        Show version drift in the modal
+        <span class="help">When the download URL contains a version number that differs from Homebrew's, show "Page: 1.2.3 · Brew: 1.2.5" so you know which is newer.</span>
+      </span>
+    </label>
+
+    <label class="field" for="snoozeDuration">When you click "Download anyway", remember that choice for…</label>
+    <select id="snoozeDuration">
+      <option value="session">This tab session only</option>
+      <option value="24h">24 hours (across all tabs)</option>
+    </select>
+  </section>
+
+  <section>
+    <h2>Filters</h2>
+
+    <label class="field" for="disabledHosts">Hostnames where the modal should never appear</label>
+    <textarea id="disabledHosts" placeholder="One hostname per line, e.g.&#10;example.com&#10;internal.corp.net"></textarea>
+    <span class="help">Subdomains are matched too — adding <code>example.com</code> covers <code>downloads.example.com</code>.</span>
+
+    <label class="field" for="extraExtensions" style="margin-top:18px">Extra download extensions to watch</label>
+    <textarea id="extraExtensions" placeholder="One per line, e.g.&#10;.tar.bz2&#10;.7z"></textarea>
+    <span class="help">By default we watch <code>.dmg</code>, <code>.pkg</code>, <code>.zip</code>, <code>.tar.gz</code>, <code>.tar.xz</code>, <code>.tgz</code>, <code>.tbz</code>.</span>
+  </section>
+
+  <div class="actions">
+    <button class="primary" id="save">Save</button>
+    <button class="secondary" id="reset">Reset to defaults</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
