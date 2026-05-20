@@ -123,25 +123,6 @@ node tests/matcher.test.mjs
 
 The matcher is a pure function with no `chrome.*` dependencies, so the tests run under plain Node — no jsdom or extension harness needed.
 
-## Why a copy command and not "click to install"?
-
-Browsers can't shell out. Three options exist:
-
-1. **Copy command to clipboard** (what this does) — zero install friction, user pastes into a Terminal they already have open.
-2. **Register a `brew://` URL handler** — a tiny helper app handles `brew://install/<token>` and runs the command in Terminal. One-time install, smoother flow.
-3. **Native messaging host** — extension talks to a local binary via stdin/stdout. Cleanest in-browser UX, most install ceremony.
-
-Option 1 is the right starting point. Option 2 is the natural next step — it could ship as a `cthb url-handler install` subcommand.
-
-## Roadmap
-
-- [x] Settings page: enable/disable per host, custom archive extensions, snooze duration, drift toggle
-- [x] Show version drift (page offers 1.2.3, cask has 1.2.5)
-- [x] GitHub release URL matching via `owner/repo` extraction
-- [ ] Detect "already installed via brew" and replace the modal copy
-- [ ] Chrome Web Store + AMO submissions
-- [ ] Per-cask preview screenshot pulled from `homepage`
-
 ## License
 
 MIT
