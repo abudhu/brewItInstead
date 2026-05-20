@@ -1,0 +1,210 @@
+:host, .bii-container {
+  all: initial;
+}
+
+.bii-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.bii-card {
+  position: relative;
+  background: #ffffff;
+  color: #111;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  padding: 24px 24px 20px;
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bii-card {
+    background: #1f2024;
+    color: #f3f3f3;
+  }
+}
+
+.bii-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.bii-close:hover { opacity: 1; }
+
+.bii-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c2410c;
+  margin-bottom: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  .bii-eyebrow { color: #fb923c; }
+}
+
+.bii-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bii-desc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.bii-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.bii-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  .bii-pill { background: rgba(255, 255, 255, 0.1); }
+}
+.bii-conf-verified { background: #16a34a; color: #fff; }
+.bii-conf-likely   { background: #ca8a04; color: #fff; }
+.bii-conf-host     { background: #2563eb; color: #fff; }
+.bii-conf-filename { background: #6b7280; color: #fff; }
+
+.bii-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 12px;
+}
+.bii-link:hover { text-decoration: underline; }
+@media (prefers-color-scheme: dark) {
+  .bii-link { color: #60a5fa; }
+}
+
+.bii-cmd-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: #0f172a;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.bii-cmd {
+  flex: 1;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: #f1f5f9;
+  padding: 10px 12px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.bii-copy {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 0;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bii-copy:hover { background: #334155; }
+.bii-copy.bii-copied { background: #16a34a; }
+
+.bii-alts {
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+.bii-alts summary {
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 4px 0;
+}
+.bii-alt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.bii-alt code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  background: rgba(0,0,0,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  .bii-alt code { background: rgba(255,255,255,0.08); }
+}
+.bii-alt span {
+  flex: 1;
+  opacity: 0.8;
+}
+.bii-alt button {
+  border: 0;
+  background: #e5e7eb;
+  color: #111;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+@media (prefers-color-scheme: dark) {
+  .bii-alt button { background: #374151; color: #f3f3f3; }
+}
+
+.bii-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.bii-actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.bii-dismiss {
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+}
+.bii-dismiss:hover { opacity: 1; }
+.bii-proceed {
+  background: #e5e7eb;
+  color: #111;
+}
+.bii-proceed:hover { background: #d1d5db; }
+@media (prefers-color-scheme: dark) {
+  .bii-proceed { background: #374151; color: #f3f3f3; }
+  .bii-proceed:hover { background: #4b5563; }
+}

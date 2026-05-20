@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Brew It Instead</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      width: 280px;
+      color: #111;
+      background: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1f2024; color: #f3f3f3; }
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 4px;
+      font-weight: 600;
+    }
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c2410c;
+      margin-bottom: 8px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .eyebrow { color: #fb923c; }
+    }
+    p { font-size: 12px; line-height: 1.4; opacity: 0.85; margin: 8px 0; }
+    .row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 6px 0; }
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #111;
+      margin-top: 4px;
+    }
+    button:hover { background: #d1d5db; }
+    @media (prefers-color-scheme: dark) {
+      button { background: #374151; color: #f3f3f3; }
+      button:hover { background: #4b5563; }
+    }
+    code { font-family: ui-monospace, "SF Mono", Menlo, monospace; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">Brew It Instead</div>
+  <h1>Cask catalog</h1>
+  <div class="row"><span>Casks indexed</span><code id="count">…</code></div>
+  <div class="row"><span>Last refreshed</span><code id="when">…</code></div>
+  <button id="refresh">Refresh now</button>
+  <p>When you click a <code>.dmg</code>, <code>.pkg</code> or <code>.zip</code> link that matches a Homebrew cask, a modal will pop up with the install command.</p>
+  <script src="popup.js"></script>
+</body>
+</html>

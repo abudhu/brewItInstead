@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Brew It Instead",
+  "version": "0.1.0",
+  "description": "Spot macOS downloads that are available as Homebrew casks and offer a one-line install command instead.",
+  "homepage_url": "https://github.com/abudhu/brewItInstead",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage",
+    "downloads",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://formulae.brew.sh/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/modal.css", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_title": "Brew It Instead",
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "brewitinstead@abudhu.dev",
+      "strict_min_version": "115.0"
+    }
+  }
+}
